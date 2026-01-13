@@ -94,20 +94,19 @@ export function ShowtimeFormModal({
         startAt: new Date(formData.startAt).toISOString(),
       };
 
-      // Validate first
-      const validation = await showtimeApi.validateShowtime(payload);
-      if (!validation.valid) {
-        setValidationError(validation.message || validation.errors?.join(", ") || "Validation failed");
-        setSubmitting(false);
-        return;
-      }
-
-      // Create showtime
+      // Create showtime (backend will validate)
       await showtimeApi.createShowtime(payload);
       onSuccess();
       onClose();
-    } catch (err) {
-      setValidationError(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } catch (err: any) {
+      console.error('Showtime creation error:', err);
+      let errorMsg = 'Có lỗi xảy ra';
+      if (err?.message) errorMsg = err.message;
+      if (err?.errors && Array.isArray(err.errors) && err.errors.length > 0) {
+        const details = err.errors.map((e: any) => typeof e === 'string' ? e : e?.message || JSON.stringify(e)).join(', ');
+        errorMsg += `. Chi tiết: ${details}`;
+      }
+      setValidationError(errorMsg);
     } finally {
       setSubmitting(false);
     }

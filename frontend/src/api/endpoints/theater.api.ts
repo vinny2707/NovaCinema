@@ -70,7 +70,7 @@ export const theaterApi = {
     if (params.hotline && params.hotline.trim()) cleanParams.hotline = params.hotline;
     if (params.isActive !== undefined) cleanParams.isActive = params.isActive;
     if (params.sort && params.sort.length > 0) cleanParams.sort = params.sort;
-    
+
     const response = await apiClient.get("/theaters", { params: cleanParams });
     return response as unknown as PaginatedResponse<Theater>;
   },
@@ -86,13 +86,13 @@ export const theaterApi = {
     if (params.hotline && params.hotline.trim()) cleanParams.hotline = params.hotline;
     if (params.isActive !== undefined) cleanParams.isActive = params.isActive;
     if (params.sort && params.sort.length > 0) cleanParams.sort = params.sort;
-    
+
     const response = await apiClient.get("/theaters/list", { params: cleanParams });
-    
+
     if (Array.isArray(response)) {
       return response;
     }
-    
+
     if (response && typeof response === 'object') {
       const resp = response as unknown as Record<string, unknown>;
       if (Array.isArray(resp.items)) {
@@ -102,7 +102,7 @@ export const theaterApi = {
         return resp.data as Theater[];
       }
     }
-    
+
     return [];
   },
 
@@ -141,7 +141,7 @@ export const theaterApi = {
    * Get rooms by theater ID
    */
   getRoomsByTheaterId: async (theaterId: string): Promise<Room[]> => {
-    const response = await apiClient.get(`/rooms/theaters/${theaterId}`);
+    const response = await apiClient.get(`/theaters/${theaterId}/rooms`);
     if (Array.isArray(response)) {
       return response;
     }

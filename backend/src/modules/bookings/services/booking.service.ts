@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -46,13 +45,14 @@ export class BookingService {
   ) {
     //
   }
-  //
-  public async findBookingById(bookingId: string) {
-    return await this.bookingRepository.query.findOneById({
-      id: bookingId,
+  /** */
+  public async findBookingById(id: string) {
+    return this.bookingRepository.query.findOneById({
+      id: id,
     });
   }
 
+  /** */
   public async getBookingAvailability(showtimeId: string) {
     const showtime = await this.showtimeService.findShowtimeById(showtimeId);
     if (!showtime) throw new NotFoundException('Showtime not found');
@@ -96,9 +96,13 @@ export class BookingService {
 
     //
     const blockings = await this.findBlockingBookingsByShowtimeId(showtime._id);
-    const seatMap = this.buildSeatAvailabilityMap(rawSeatMap, blockings);
+    const userActiveBooking = this.findUserActiveBooking(user._id, blockings);
+    if (userActiveBooking) {
+      throw new ConflictException('User already has an active booking');
+    }
 
     //
+    const seatMap = this.buildSeatAvailabilityMap(rawSeatMap, blockings);
     const seatMapIndex = this.buildSeatAvailabilityIndexByCode(seatMap);
     this.validateSeatsAvailability(seatMapIndex, selectedSet);
     this.validateOrphanRule(seatMap, selectedSet);
@@ -184,6 +188,90 @@ export class BookingService {
     }
   }
 
+  public async markDraftToPendingPayment(id: string) {
+    const now = DateUtil.nowUTC();
+    const expiresAt = DateUtil.add(now, {
+      minute: BOOKING_EXPIRE_MINUTES.PENDING_PAYMENT,
+    });
+
+    const { modifiedItem } = await this.bookingRepository.command.updateOne({
+      filter: {
+        _id: id,
+        status: BOOKING_STATUSES.DRAFT,
+        expiresAt: { $gt: now },
+      },
+      update: {
+        status: BOOKING_STATUSES.PENDING_PAYMENT,
+        expiresAt,
+      },
+    });
+
+    if (!modifiedItem) {
+      throw new ConflictException(
+        'Booking is not in DRAFT state or already expired',
+      );
+    }
+
+    return modifiedItem;
+  }
+
+  public async markPendingPaymentToConfirmed(id: string) {
+    const { modifiedItem } = await this.bookingRepository.command.updateOne({
+      filter: {
+        _id: id,
+        status: BOOKING_STATUSES.PENDING_PAYMENT,
+      },
+      update: {
+        status: BOOKING_STATUSES.CONFIRMED,
+        expiresAt: null,
+      },
+    });
+
+    if (!modifiedItem) {
+      throw new ConflictException('Booking is not in PENDING_PAYMENT state');
+    }
+
+    return modifiedItem;
+  }
+
+  public async markPendingPaymentToCancelled(id: string) {
+    const { modifiedItem } = await this.bookingRepository.command.updateOne({
+      filter: {
+        _id: id,
+        status: BOOKING_STATUSES.PENDING_PAYMENT,
+      },
+      update: {
+        status: BOOKING_STATUSES.CANCELLED,
+        expiresAt: null,
+      },
+    });
+
+    if (!modifiedItem) {
+      throw new ConflictException('Booking is not in PENDING_PAYMENT state');
+    }
+
+    return modifiedItem;
+  }
+
+  public async markPendingPaymentToExpired(id: string) {
+    const { modifiedItem } = await this.bookingRepository.command.updateOne({
+      filter: {
+        _id: id,
+        status: BOOKING_STATUSES.PENDING_PAYMENT,
+      },
+      update: {
+        status: BOOKING_STATUSES.EXPIRED,
+        expiresAt: null,
+      },
+    });
+
+    if (!modifiedItem) {
+      throw new ConflictException('Booking is not in PENDING_PAYMENT state');
+    }
+
+    return modifiedItem;
+  }
+
   /** */
   private async findBlockingBookingsByShowtimeId(showtimeId: string) {
     const now = DateUtil.nowUTC();
@@ -205,200 +293,19 @@ export class BookingService {
     });
   }
 
-  /** */
-  public async markBookingPendingPayment(bookingId: string) {
-    const now = DateUtil.nowUTC();
+  //
+  private findUserActiveBooking(
+    userId: string,
+    blockings: { userId: string; status: BookingStatus }[],
+  ) {
+    const ACTIVE_STATUSES: BookingStatus[] = [
+      BOOKING_STATUSES.DRAFT,
+      BOOKING_STATUSES.PENDING_PAYMENT,
+    ];
 
-    const booking = await this.bookingRepository.query.findOne({
-      filter: {
-        _id: bookingId,
-      },
-      inclusion: {
-        status: true,
-        expiresAt: true,
-      },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    if (booking.status !== BOOKING_STATUSES.DRAFT) {
-      throw new BadRequestException('Booking is not in DRAFT state');
-    }
-
-    if (!booking.expiresAt || booking.expiresAt <= now) {
-      throw new BadRequestException('Booking already expired');
-    }
-
-    try {
-      const { modifiedItem: updated } =
-        await this.bookingRepository.command.updateOne({
-          filter: {
-            _id: bookingId,
-            status: BOOKING_STATUSES.DRAFT,
-          },
-          update: {
-            status: BOOKING_STATUSES.PENDING_PAYMENT,
-            expiresAt: null,
-          },
-        });
-
-      if (!updated) {
-        throw new ConflictException(
-          'Booking status has changed. Please refresh and try again',
-        );
-      }
-
-      return updated;
-    } catch (err: any) {
-      if (err?.code === 11000) {
-        throw new ConflictException('Booking status update conflict');
-      }
-      if (err instanceof HttpException) throw err;
-      throw new InternalServerErrorException();
-    }
-  }
-
-  public async markBookingConfirmed(bookingId: string) {
-    const booking = await this.bookingRepository.query.findOne({
-      filter: {
-        _id: bookingId,
-      },
-      inclusion: {
-        status: true,
-      },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    if (booking.status !== BOOKING_STATUSES.PENDING_PAYMENT) {
-      throw new BadRequestException('Booking is not in PENDING_PAYMENT state');
-    }
-
-    try {
-      const { modifiedItem: updated } =
-        await this.bookingRepository.command.updateOne({
-          filter: {
-            _id: bookingId,
-            status: BOOKING_STATUSES.PENDING_PAYMENT,
-          },
-          update: {
-            status: BOOKING_STATUSES.CONFIRMED,
-            expiresAt: null,
-          },
-        });
-
-      if (!updated) {
-        throw new ConflictException(
-          'Booking status has changed. Please refresh and try again',
-        );
-      }
-
-      return updated;
-    } catch (err: any) {
-      if (err?.code === 11000) {
-        throw new ConflictException('Booking status update conflict');
-      }
-      if (err instanceof HttpException) throw err;
-      throw new InternalServerErrorException();
-    }
-  }
-
-  public async markBookingCancelled(bookingId: string) {
-    const booking = await this.bookingRepository.query.findOne({
-      filter: {
-        _id: bookingId,
-      },
-      inclusion: {
-        status: true,
-      },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    if (booking.status !== BOOKING_STATUSES.PENDING_PAYMENT) {
-      throw new BadRequestException('Booking is not in PENDING_PAYMENT state');
-    }
-
-    try {
-      const { modifiedItem: updated } =
-        await this.bookingRepository.command.updateOne({
-          filter: {
-            _id: bookingId,
-            status: BOOKING_STATUSES.PENDING_PAYMENT,
-          },
-          update: {
-            status: BOOKING_STATUSES.CANCELLED,
-            expiresAt: null,
-          },
-        });
-
-      if (!updated) {
-        throw new ConflictException(
-          'Booking status has changed. Please refresh and try again',
-        );
-      }
-
-      return updated;
-    } catch (err: any) {
-      if (err?.code === 11000) {
-        throw new ConflictException('Booking status update conflict');
-      }
-      if (err instanceof HttpException) throw err;
-      throw new InternalServerErrorException();
-    }
-  }
-
-  public async markBookingExpired(bookingId: string) {
-    const booking = await this.bookingRepository.query.findOne({
-      filter: {
-        _id: bookingId,
-      },
-      inclusion: {
-        status: true,
-      },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    if (booking.status !== BOOKING_STATUSES.PENDING_PAYMENT) {
-      throw new BadRequestException('Booking is not in PENDING_PAYMENT state');
-    }
-
-    try {
-      const { modifiedItem: updated } =
-        await this.bookingRepository.command.updateOne({
-          filter: {
-            _id: bookingId,
-            status: BOOKING_STATUSES.PENDING_PAYMENT,
-          },
-          update: {
-            status: BOOKING_STATUSES.EXPIRED,
-            expiresAt: null,
-          },
-        });
-
-      if (!updated) {
-        throw new ConflictException(
-          'Booking status has changed. Please refresh and try again',
-        );
-      }
-
-      return updated;
-    } catch (err: any) {
-      if (err?.code === 11000) {
-        throw new ConflictException('Booking status update conflict');
-      }
-      if (err instanceof HttpException) throw err;
-      throw new InternalServerErrorException();
-    }
+    return blockings.find(
+      (b) => b.userId === userId && ACTIVE_STATUSES.includes(b.status),
+    );
   }
 
   // seat type prices

@@ -5,6 +5,7 @@ import { Showtime } from 'src/modules/showtimes';
 import { BOOKING_STATUS_VALUES, BOOKING_STATUSES } from '../constants';
 import { BookingStatus } from '../types';
 import { BookingSeat, BookingSeatSchema } from './booking-seat.schema';
+import { RoomType } from 'src/modules/theaters/types';
 
 export type BookingDocument = HydratedDocument<Booking>;
 
@@ -25,6 +26,16 @@ export class Booking {
     immutable: true,
   })
   showtimeId!: Types.ObjectId;
+
+  @Prop({
+    type: String,
+  })
+  roomType!: RoomType;
+
+  @Prop({
+    type: Date,
+  })
+  startAt!: Date;
 
   @Prop({
     required: true,
@@ -109,13 +120,24 @@ export class Booking {
   @Prop() movieTitle?: string;
   @Prop() theaterName?: string;
   @Prop() roomName?: string;
-  @Prop() roomType?: string;
-  @Prop() startAt?: Date;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);
 
 BookingSchema.index({ userId: 1, createdAt: -1 });
-BookingSchema.index({ status: 1 });
+// BookingSchema.index({ status: 1 });
 BookingSchema.index({ showtimeId: 1 });
-BookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+BookingSchema.index({ showtimeId: 1, status: 1, expiresAt: 1 });
+// BookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+BookingSchema.index(
+  { userId: 1, showtimeId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: {
+        $in: [BOOKING_STATUSES.DRAFT, BOOKING_STATUSES.PENDING_PAYMENT],
+      },
+    },
+  },
+);

@@ -1,4 +1,3 @@
-import React from 'react';
 // Plus import removed because Add button was removed
 
 export default function UserHeader() {

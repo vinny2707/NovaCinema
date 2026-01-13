@@ -91,7 +91,7 @@ export const roomApi = {
     if (filters.roomType && filters.roomType.length > 0) params.roomType = filters.roomType;
     if (filters.isActive !== undefined) params.isActive = filters.isActive;
 
-    const response = await apiClient.get(`/rooms/theaters/${theaterId}`, { params });
+    const response = await apiClient.get(`/theaters/${theaterId}/rooms`, { params });
     return response as unknown as PaginatedResponse<Room>;
   },
 
@@ -101,13 +101,13 @@ export const roomApi = {
   getById: async (roomId: string): Promise<RoomDetail> => {
     const response = await apiClient.get(`/rooms/${roomId}`);
     let apiData: RoomDetailApiResponse;
-    
+
     if (response && typeof response === 'object' && 'data' in response) {
       apiData = (response as { data: RoomDetailApiResponse }).data;
     } else {
       apiData = response as unknown as RoomDetailApiResponse;
     }
-    
+
     // Transform seatMap from SeatObject[][] to (SeatType | null)[][]
     return {
       ...apiData,
@@ -137,7 +137,7 @@ export const roomApi = {
    * Create new room
    */
   create: async (theaterId: string, data: CreateRoomDto): Promise<RoomDetail> => {
-    const response = await apiClient.post(`/rooms/theaters/${theaterId}`, data);
+    const response = await apiClient.post(`/theaters/${theaterId}/rooms`, data);
     if (response && typeof response === 'object' && 'data' in response) {
       return (response as { data: RoomDetail }).data;
     }
@@ -146,7 +146,7 @@ export const roomApi = {
 
   /**
    * Get rooms list by theater ID (no pagination - for dropdown)
-   * GET /api/rooms/theaters/{theaterId}/list
+   * GET /api/theaters/{theaterId}/rooms/list
    */
   getRoomsListByTheaterId: async (
     theaterId: string,
@@ -160,8 +160,8 @@ export const roomApi = {
     if (filters.roomType && filters.roomType.length > 0) params.roomType = filters.roomType;
     if (filters.isActive !== undefined) params.isActive = filters.isActive;
 
-    const response = await apiClient.get(`/rooms/theaters/${theaterId}/list`, { params });
-    
+    const response = await apiClient.get(`/theaters/${theaterId}/rooms/list`, { params });
+
     // Handle different response formats
     if (response && typeof response === 'object' && 'data' in response) {
       return (response as { data: Room[] }).data || [];

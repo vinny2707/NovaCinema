@@ -32,6 +32,14 @@ export class BookingResDto {
   @Expose()
   showtimeId!: string;
 
+  @ApiProperty()
+  @Expose()
+  roomType!: string;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  @Expose()
+  startAt!: Date;
+
   @ApiProperty({
     enum: BOOKING_STATUS_VALUES,
     example: BOOKING_STATUSES.DRAFT,
@@ -108,14 +116,6 @@ export class BookingResDto {
   @ApiPropertyOptional()
   @Expose()
   roomName?: string;
-
-  @ApiPropertyOptional()
-  @Expose()
-  roomType?: string;
-
-  @ApiPropertyOptional({ type: String, format: 'date-time' })
-  @Expose()
-  startAt?: Date;
 
   // ---- Audit ----
   @ApiProperty({ type: String, format: 'date-time' })

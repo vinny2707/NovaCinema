@@ -93,7 +93,7 @@ export class MoviesController {
   })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.OK)
-  @Patch('movies:id')
+  @Patch('movies/:id')
   public async updateMovie(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateMovieReqDto,
@@ -105,7 +105,7 @@ export class MoviesController {
   @WrapNoContentResponse({ message: 'Movie deleted successfully' })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('movies:id')
+  @Delete('movies/:id')
   public async deleteMovie(@Param('id', ParseObjectIdPipe) id: string) {
     return this.movieService.deleteMovieById(id);
   }

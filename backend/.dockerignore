@@ -1,0 +1,44 @@
+# Node dependencies
+
+node_modules/
+
+# Build output
+
+dist/
+build/
+out/
+
+# Git
+
+.git
+.gitignore
+
+# Environment
+
+.env
+.env.\*
+!.env.example
+
+# Logs & temp
+
+logs/
+_.log
+tmp/
+temp/
+_.tmp
+coverage/
+.nyc_output/
+
+# IDE
+
+.vscode/
+.idea/
+
+# OS
+
+.DS_Store
+
+# Docker (optional)
+
+docker-compose.yml
+docker-compose.override.yml

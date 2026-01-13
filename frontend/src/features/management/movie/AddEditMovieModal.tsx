@@ -37,7 +37,7 @@ export default function AddEditMovieModal({ isOpen, onClose, onSuccess, movie }:
             // Debug: log raw endDate from server
             console.log('Movie endDate from server:', movie.endDate, 'Type:', typeof movie.endDate);
             console.log('Movie releaseDate from server:', movie.releaseDate, 'Type:', typeof movie.releaseDate);
-            
+
             // Helper to extract yyyy-MM-dd from various formats
             const extractDate = (dateValue: string | undefined | null): string => {
                 if (!dateValue) return '';
@@ -98,7 +98,7 @@ export default function AddEditMovieModal({ isOpen, onClose, onSuccess, movie }:
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formData.title || formData.genres.length === 0 || !formData.duration) {
             toast.push('Please fill in all required fields', 'error');
             return;
@@ -198,8 +198,8 @@ export default function AddEditMovieModal({ isOpen, onClose, onSuccess, movie }:
     if (!isOpen) return null;
 
     return (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40' onClick={onClose}>
-            <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
+            <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto'>
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-gray-800">

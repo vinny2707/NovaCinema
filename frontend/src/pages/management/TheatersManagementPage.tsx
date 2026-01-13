@@ -11,7 +11,6 @@ export default function TheatersManagementPage() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(9);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Debounce search input - wait 500ms after user stops typing
     useEffect(() => {
@@ -34,10 +33,10 @@ export default function TheatersManagementPage() {
     return (
         <div>
             <TheaterHeader onAddClick={() => setShowAddModal(true)} />
-            <TheaterSearchFilter 
-                q={searchInput} 
-                isActive={isActive} 
-                onChange={handleFilterChange} 
+            <TheaterSearchFilter
+                q={searchInput}
+                isActive={isActive}
+                onChange={handleFilterChange}
             />
             <TheatersTable
                 search={search}
@@ -53,7 +52,6 @@ export default function TheatersManagementPage() {
                 <AddEditTheaterModal
                     theater={null}
                     onClose={() => setShowAddModal(false)}
-                    onSuccess={() => setRefreshTrigger((prev) => prev + 1)}
                 />
             )}
         </div>

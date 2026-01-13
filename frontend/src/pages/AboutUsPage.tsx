@@ -14,28 +14,28 @@ const teamMembers: TeamMember[] = [
         id: 1,
         name: "Hồ Quang Sang",
         role: "Backend Developer",
-        avatar: "../../public/1.png",
+        avatar: "/1.png",
         bio: "Responsible for building APIs, handling business logic, and optimizing server-side performance."
     },
     {
         id: 2,
         name: "Nguyễn Khắc Vượng",
         role: "Frontend Developer",
-        avatar: "../../public/2.jpg",
+        avatar: "/2.jpg",
         bio: "Focused on developing modern, user-friendly interfaces with smooth user experiences."
     },
     {
         id: 3,
         name: "Trần Quốc Vỹ",
         role: "Frontend Developer",
-        avatar: "../../public/3.jpg",
+        avatar: "/3.jpg",
         bio: "Implementing UI/UX designs and ensuring responsive, cross-device compatibility."
     },
     {
         id: 4,
         name: "Nguyễn Thanh Phương",
         role: "Tester",
-        avatar: "../../public/4.jpg",
+        avatar: "/4.jpg",
         bio: "Conducting testing, identifying bugs, and ensuring overall product quality."
     }
 ];

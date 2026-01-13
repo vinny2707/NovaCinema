@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { Button } from "../common/Button";
 import { CirclePlay, Tag, Clock, Globe, MessageSquareMore, UserCheck } from "lucide-react";
 import MetaItem from "./MetaItem";
@@ -22,7 +22,7 @@ function DescriptionWithToggle({
 
   return (
     <>
-      <p className="mt-2 whitespace-pre-line">{open ? desc : short}</p>
+      <p className="mt-2 whitespace-pre-line text-justify">{open ? desc : short}</p>
       {desc && (
         <button
           type="button"
@@ -42,37 +42,37 @@ export interface MovieDetailsProps {
 }
 
 export default function MovieDetails({ movie }: MovieDetailsProps) {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const formatRatingAge = (age?: number | string | null) => {
     if (age === null || age === undefined) return "N/A";
-    
+
     const ageStr = String(age).toUpperCase().trim();
-    
+
     // P hoặc 0: Phim dành cho mọi lứa tuổi
     if (ageStr === 'P' || ageStr === '0') {
       return "P: Phim dành cho khán giả mọi lứa tuổi";
     }
-    
+
     // Cxx: Cấm chiếu dưới xx tuổi (nghiêm ngặt)
     const cMatch = ageStr.match(/^C(\d+)$/);
     if (cMatch) {
       const ageNum = cMatch[1];
       return `C${ageNum}: CẤM khán giả dưới ${ageNum} tuổi`;
     }
-    
+
     // Txx: Phim dành cho từ xx tuổi trở lên
     const tMatch = ageStr.match(/^T(\d+)$/);
     if (tMatch) {
       const ageNum = tMatch[1];
       return `T${ageNum}: Phim dành cho khán giả từ đủ ${ageNum} tuổi trở lên (${ageNum}+)`;
     }
-    
+
     // Số thuần túy: Tương tự Txx
     if (/^\d+$/.test(ageStr)) {
       return `T${ageStr}: Phim dành cho khán giả từ đủ ${ageStr} tuổi trở lên (${ageStr}+)`;
     }
-    
+
     // Trường hợp khác: hiển thị nguyên bản
     return ageStr;
   };
@@ -130,10 +130,6 @@ export default function MovieDetails({ movie }: MovieDetailsProps) {
               <CirclePlay className="w-5 h-5" />
               <span>Watch trailer</span>
             </div>
-          </Button>
-
-          <Button intent="primary" onClick={() => navigate(`/movie/${movie._id}`)} className="cursor-pointer">
-            BUY TICKETS
           </Button>
         </div>
         <TrailerModal

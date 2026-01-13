@@ -6,6 +6,7 @@ import { LoggingInterceptor, ResponseInterceptor } from './common/interceptors';
 import { HttpExceptionFilter, MongoExceptionFilter } from './common/filters';
 import { JwtAuthGuard, RolesGuard } from './common/guards';
 import { DatabaseModule } from './database';
+import { HealthModule } from './modules/health';
 import { UsersModule } from './modules/users';
 import { NotificationsModule } from './modules/notifications';
 import { AuthModule } from './modules/auth';
@@ -14,10 +15,13 @@ import { TheatersModule } from './modules/theaters';
 import { PricingConfigModule } from './modules/pricing-configs';
 import { ShowtimesModule } from './modules/showtimes';
 import { BookingsModule } from './modules/bookings';
+import { PaymentsModule } from './modules/payments';
+import { TicketsModule } from './modules/tickets';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), // load .env toàn cục
+    HealthModule,
     DatabaseModule,
     UsersModule,
     AuthModule,
@@ -27,6 +31,8 @@ import { BookingsModule } from './modules/bookings';
     PricingConfigModule,
     ShowtimesModule,
     BookingsModule,
+    PaymentsModule,
+    TicketsModule,
   ],
 
   providers: [

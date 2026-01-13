@@ -80,7 +80,7 @@ export class TheatersController {
   @WrapOkResponse({ dto: TheaterResDto, message: 'Updated successfully' })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.OK)
-  @Patch('theaters:id')
+  @Patch('theaters/:id')
   public async updateTheater(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateTheaterReqDto,
@@ -92,7 +92,7 @@ export class TheatersController {
   @WrapNoContentResponse({ message: 'Deleted successfully' })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('theaters:id')
+  @Delete('theaters/:id')
   public async deleteTheater(@Param('id', ParseObjectIdPipe) id: string) {
     await this.theaterService.deleteTheaterById(id);
   }

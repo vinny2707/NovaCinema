@@ -7,7 +7,7 @@ import { useToast } from '../../../components/common/ToastProvider';
 interface Props {
     theater: Theater | null;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess?: () => void;
 }
 
 export default function AddEditTheaterModal({ theater, onClose, onSuccess }: Props) {
@@ -86,7 +86,7 @@ export default function AddEditTheaterModal({ theater, onClose, onSuccess }: Pro
                 await theaterApi.create(formData);
                 toast.push('Theater created successfully', 'success');
             }
-            onSuccess();
+            onSuccess?.();
             onClose();
         } catch (err: any) {
             setError(err?.message || 'Failed to save theater');

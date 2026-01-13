@@ -10,16 +10,22 @@ import AuthPage from "./pages/AuthPage";
 import NowShowingPage from "./pages/NowShowingPage";
 import ComingSoonPage from "./pages/ComingSoonPage";
 import AboutUsPage from "./pages/AboutUsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import DashboardPage from "./pages/management/DashboardPage";
 import MoviesManagementPage from "./pages/management/MoviesManagementPage";
 import TheatersManagementPage from "./pages/management/TheatersManagementPage";
 import RoomsManagementPage from "./pages/management/RoomsManagementPage";
 import UsersManagementPage from "./pages/management/UsersManagementPage";
 import ShowtimesManagementPage from "./pages/management/ShowtimesManagementPage";
+import TicketPricingManagementPage from "./pages/management/TicketPricingManagementPage";
+import BookingManagementPage from "./pages/management/BookingManagementPage";
 import SettingsPage from "./pages/management/SettingsPage";
 
 import ProfilePage from "./pages/ProfilePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import PaymentStatusPage from "./pages/PaymentStatusPage";
 
 import "./App.css";
 
@@ -51,6 +57,14 @@ function App() {
             <Route path="now-showing" element={<NowShowingPage />} />
             <Route path="coming-soon" element={<ComingSoonPage />} />
             <Route path="about-us" element={<AboutUsPage />} />
+            <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="search" element={<SearchResultsPage />} />
+            <Route path="checkout" element={
+              <ProtectedRoute>
+                <CheckoutPage />
+              </ProtectedRoute>
+            } />
+            <Route path="payments/callback" element={<PaymentStatusPage />} />
           </Route>
 
           {/* Management Routes - Protected for Admin only */}
@@ -68,6 +82,8 @@ function App() {
             <Route path="rooms" element={<RoomsManagementPage />} />
             <Route path="users" element={<UsersManagementPage />} />
             <Route path="showtimes" element={<ShowtimesManagementPage />} />
+            <Route path="pricing" element={<TicketPricingManagementPage />} />
+            <Route path="bookings" element={<BookingManagementPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

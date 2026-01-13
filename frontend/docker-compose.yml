@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=https://novacinema.up.railway.app
+      - VITE_API_VERSION=v1
+      - VITE_ENABLE_LOGGING=false
+    restart: unless-stopped
+    container_name: nova-cinema-frontend
+    networks:
+      - nova-network
+
+networks:
+  nova-network:
+    driver: bridge

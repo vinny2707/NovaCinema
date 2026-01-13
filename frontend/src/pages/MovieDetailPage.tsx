@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { movieApi } from "../api/endpoints/movie.api";
 import MovieDetails from "../components/movie-details/MovieDetails";
+import ShowtimeSection from "../features/booking/ShowtimeSection";
 import { Button } from "../components/common/Button";
 import { useEffect } from "react";
 
@@ -41,6 +42,9 @@ export default function MovieDetailPage() {
     <section className="w-full py-12 text-white">
       <div className="container mx-auto max-w-7xl px-4">
         <MovieDetails movie={movie} />
+
+        {/* Booking Section */}
+        <ShowtimeSection movieId={movie._id} />
       </div>
     </section>
   );

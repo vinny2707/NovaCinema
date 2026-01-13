@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Loader2, AlertCircle, Plus, Trash2, Calendar, Clock } from "lucide-react";
-import { showtimeApi, type CreateRepeatedShowtimesDto } from "../../../api/endpoints/showtime.api";
+import { showtimeApi, type CreateBulkShowtimesDto } from "../../../api/endpoints/showtime.api";
 import type { Movie } from "../../../api/endpoints/movie.api";
 import type { Theater, Room } from "../../../api/endpoints/theater.api";
 import { SearchableMovieSelect } from "../../../components/common/SearchableMovieSelect";
@@ -25,12 +25,12 @@ export function BulkShowtimeFormModal({
   fetchRoomsByTheaterId,
 }: BulkShowtimeFormModalProps) {
   const toast = useToast();
-  
+
   // Form state
   const [selectedMovieId, setSelectedMovieId] = useState("");
   const [selectedTheaterId, setSelectedTheaterId] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
   const [repeatDates, setRepeatDates] = useState<string[]>([""]); // yyyy-MM-dd format
   const [startTimes, setStartTimes] = useState<string[]>([""]); // HH:mm format
   const [submitting, setSubmitting] = useState(false);
@@ -42,7 +42,7 @@ export function BulkShowtimeFormModal({
     if (isOpen) {
       setSelectedMovieId("");
       setSelectedTheaterId("");
-      setSelectedRoomIds([]);
+      setSelectedRoomId("");
       setRepeatDates([""]);
       setStartTimes([""]);
       setValidationError(null);
@@ -54,31 +54,17 @@ export function BulkShowtimeFormModal({
   useEffect(() => {
     if (selectedTheaterId) {
       setLoadingRooms(true);
-      setSelectedRoomIds([]);
+      setSelectedRoomId("");
       fetchRoomsByTheaterId(selectedTheaterId)
         .then((data) => setRooms(data.filter(r => r.isActive)))
         .finally(() => setLoadingRooms(false));
     } else {
       setRooms([]);
-      setSelectedRoomIds([]);
+      setSelectedRoomId("");
     }
   }, [selectedTheaterId, fetchRoomsByTheaterId]);
 
-  const toggleRoomSelection = (roomId: string) => {
-    setSelectedRoomIds((prev) =>
-      prev.includes(roomId)
-        ? prev.filter((id) => id !== roomId)
-        : [...prev, roomId]
-    );
-  };
 
-  const selectAllRooms = () => {
-    if (selectedRoomIds.length === rooms.length) {
-      setSelectedRoomIds([]);
-    } else {
-      setSelectedRoomIds(rooms.map((r) => r._id));
-    }
-  };
 
   // Date management
   const addDate = () => setRepeatDates((prev) => [...prev, ""]);
@@ -96,14 +82,14 @@ export function BulkShowtimeFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate inputs
     if (!selectedMovieId) {
       setValidationError("Vui lòng chọn phim");
       return;
     }
-    if (selectedRoomIds.length === 0) {
-      setValidationError("Vui lòng chọn ít nhất một phòng chiếu");
+    if (!selectedRoomId) {
+      setValidationError("Vui lòng chọn phòng chiếu");
       return;
     }
     const validDates = repeatDates.filter((d) => d.trim() !== "");
@@ -121,42 +107,50 @@ export function BulkShowtimeFormModal({
     setValidationError(null);
 
     try {
-      const data: CreateRepeatedShowtimesDto = {
+      // Build schedule for the selected room with all combinations of dates and times
+      const schedules = [{
+        roomId: selectedRoomId,
+        startAts: validDates.flatMap(date =>
+          validTimes.map(time => {
+            // Create local datetime and convert to ISO
+            const localDateTime = new Date(`${date}T${time}:00`);
+            return localDateTime.toISOString();
+          })
+        )
+      }];
+
+      const data: CreateBulkShowtimesDto = {
         movieId: selectedMovieId,
-        roomIds: selectedRoomIds,
-        repeatDates: validDates,
-        startTimes: validTimes,
+        schedules
       };
 
-      // Validate first
-      const validation = await showtimeApi.validateRepeatedShowtimes(data);
-      if (!validation.valid) {
-        setValidationError(validation.message || validation.errors?.join(", ") || "Validation failed");
-        setSubmitting(false);
-        return;
-      }
-
-      // Create repeated showtimes
-      console.log("Creating repeated showtimes:", data);
-      const result = await showtimeApi.createRepeatedShowtimes(data);
+      // Create bulk showtimes
+      console.log("Creating bulk showtimes:", data);
+      const result = await showtimeApi.createBulkShowtimes(data);
       console.log("API Response:", result);
       const count = Array.isArray(result) ? result.length : totalShowtimes;
       toast.push(`Tạo thành công ${count} suất chiếu!`, "success");
       onSuccess();
       onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-      setValidationError(message);
-      toast.push(message, "error");
+    } catch (err: any) {
+      console.error('Bulk showtime creation error:', err);
+      let errorMsg = 'Có lỗi xảy ra';
+      if (err?.message) errorMsg = err.message;
+      if (err?.errors && Array.isArray(err.errors) && err.errors.length > 0) {
+        const details = err.errors.map((e: any) => typeof e === 'string' ? e : e?.message || JSON.stringify(e)).join(', ');
+        errorMsg += `. Chi tiết: ${details}`;
+      }
+      setValidationError(errorMsg);
+      toast.push(errorMsg, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Calculate total showtimes: rooms × dates × times
+  // Calculate total showtimes: dates × times
   const validDatesCount = repeatDates.filter((d) => d.trim() !== "").length;
   const validTimesCount = startTimes.filter((t) => t.trim() !== "").length;
-  const totalShowtimes = selectedRoomIds.length * validDatesCount * validTimesCount;
+  const totalShowtimes = selectedRoomId ? validDatesCount * validTimesCount : 0;
 
   if (!isOpen) return null;
 
@@ -207,51 +201,32 @@ export function BulkShowtimeFormModal({
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Phòng chiếu * ({selectedRoomIds.length}/{rooms.length})
-                </label>
-                {rooms.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={selectAllRooms}
-                    className="text-xs text-yellow-600 hover:text-yellow-700"
-                  >
-                    {selectedRoomIds.length === rooms.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
-                  </button>
-                )}
-              </div>
-              <div className="border border-gray-300 rounded-lg p-3 max-h-36 overflow-y-auto">
-                {loadingRooms ? (
-                  <div className="flex items-center justify-center py-4 text-gray-500">
-                    <Loader2 className="animate-spin mr-2" size={18} />
-                    Đang tải...
-                  </div>
-                ) : rooms.length === 0 ? (
-                  <p className="text-gray-500 text-sm text-center py-4">
-                    {selectedTheaterId ? "Không có phòng chiếu" : "Vui lòng chọn rạp"}
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {rooms.map((room) => (
-                      <label
-                        key={room._id}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedRoomIds.includes(room._id)}
-                          onChange={() => toggleRoomSelection(room._id)}
-                          className="w-4 h-4 text-yellow-500 rounded focus:ring-yellow-400"
-                        />
-                        <span className="text-sm">
-                          {room.roomName} ({room.roomType}) - {room.capacity} ghế
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phòng chiếu *
+              </label>
+              {loadingRooms ? (
+                <div className="flex items-center justify-center py-3 px-3 border border-gray-300 rounded-lg bg-gray-50">
+                  <Loader2 className="animate-spin mr-2" size={18} />
+                  <span className="text-gray-500 text-sm">Đang tải...</span>
+                </div>
+              ) : (
+                <select
+                  value={selectedRoomId}
+                  onChange={(e) => setSelectedRoomId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  required
+                  disabled={rooms.length === 0}
+                >
+                  <option value="">
+                    {selectedTheaterId ? "Chọn phòng chiếu" : "Vui lòng chọn rạp trước"}
+                  </option>
+                  {rooms.map((room) => (
+                    <option key={room._id} value={room._id}>
+                      {room.roomName} ({room.roomType}) - {room.capacity} ghế
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -346,7 +321,7 @@ export function BulkShowtimeFormModal({
                 </p>
               </div>
               <p className="text-yellow-700 text-sm mt-1">
-                ({selectedRoomIds.length} phòng × {validDatesCount} ngày × {validTimesCount} giờ)
+                ({validDatesCount} ngày × {validTimesCount} giờ)
               </p>
             </div>
           )}

@@ -17,7 +17,7 @@ export const PasswordRequirements: React.FC<PasswordRequirementsProps> = ({ pass
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
 
     const requirements = [
         { met: hasMinLength, text: 'At least 8 characters' },
