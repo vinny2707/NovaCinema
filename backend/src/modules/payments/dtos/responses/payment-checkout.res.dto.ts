@@ -15,4 +15,20 @@ export class PaymentCheckoutResDto extends PaymentResDto {
   })
   @Expose()
   qrCode!: string;
+
+  @ApiProperty({ example: '970422', description: 'Bank BIN code' })
+  @Expose()
+  bin?: string;
+
+  @ApiProperty({ example: '09831340840', description: 'Bank account number' })
+  @Expose()
+  accountNumber?: string;
+
+  @ApiProperty({ example: 'CONG TY CP PAYOS', description: 'Bank account name' })
+  @Expose()
+  accountName?: string;
+
+  @ApiProperty({ example: 'CSQ004R6DX9 Booking 11001016803829', description: 'Full transfer content for manual bank transfer' })
+  @Expose()
+  transferContent?: string;
 }

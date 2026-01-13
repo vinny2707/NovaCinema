@@ -12,6 +12,7 @@
     "seed:movies": "ts-node -r tsconfig-paths/register src/scripts/seeders/seed.ts movies",
     "seed:theaters": "ts-node -r tsconfig-paths/register src/scripts/seeders/seed.ts theaters",
     "seed:showtimes": "ts-node -r tsconfig-paths/register src/scripts/seeders/seed.ts showtimes",
+    "seed:bookings": "ts-node -r tsconfig-paths/register src/scripts/seeders/seed.ts bookings",
     "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seeders/seed.ts all",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -25,6 +26,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@google/genai": "^1.35.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -39,14 +41,14 @@
     "class-validator": "^0.14.3",
     "escape-string-regexp": "^4.0.0",
     "handlebars": "^4.7.8",
-    "hashids": "^2.3.0",
     "luxon": "^3.7.2",
     "mongoose": "^8.19.4",
-    "nodemailer": "^7.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "resend": "^6.7.0",
+    "rxjs": "^7.8.1",
+    "source-map-support": "^0.5.21"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -59,7 +61,6 @@
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.7.1",
     "@types/node": "^22.10.7",
-    "@types/nodemailer": "^7.0.4",
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
@@ -71,7 +72,6 @@
     "globals": "^16.0.0",
     "jest": "^30.0.0",
     "prettier": "^3.4.2",
-    "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "swagger-ui-express": "^5.0.1",
     "ts-jest": "^29.2.5",

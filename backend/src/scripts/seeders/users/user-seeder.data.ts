@@ -1,5 +1,6 @@
 import { User } from 'src/modules/users/schemas/user.schema';
 import { hashSync } from 'bcrypt';
+import { USER_ROLES } from 'src/modules/users/constants';
 
 const randomInt = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
@@ -17,37 +18,24 @@ const randomPhone = () => '0' + randomInt(300000000, 999999999).toString();
 
 const randomEmailVerified = () => Math.random() < 0.9;
 
-const FULL_NAMES = [
-  'Nguyễn Văn An',
-  'Trần Thị Mai',
-  'Lê Hoàng Minh',
-  'Phạm Thu Trang',
-  'Võ Thành Long',
-  'Bùi Đức Anh',
-  'Đặng Thị Hương',
-  'Phan Quốc Huy',
-  'Huỳnh Ngọc Lan',
-  'Đỗ Minh Quân',
-  'Cao Thị Ngọc',
-  'Dương Anh Tuấn',
-  'Lý Thảo Nhi',
-  'Hoàng Quốc Bảo',
-  'Nguyễn Thanh Tùng',
-  'Trịnh Minh Châu',
-  'Vũ Hải Đăng',
-  'Phạm Mỹ Linh',
-  'Lâm Nhật Nam',
-  'Ngô Thị Bích',
-  'Trần Văn Khoa',
-  'Nguyễn Thị Lan',
-  'Phạm Văn Sơn',
-  'Lê Thị Hồng',
-  'Đinh Quang Vinh',
-  'Bùi Thị Thanh',
-  'Ngô Minh Tuấn',
-  'Vũ Thị Ngọc',
-  'Trần Nhật Nam',
-  'Phan Thị Bích',
+// Extended list of Vietnamese names for generating 300 users
+const FIRST_NAMES = [
+  'An', 'Anh', 'Bảo', 'Bích', 'Châu', 'Chi', 'Cường', 'Dũng', 'Dương', 'Đạt',
+  'Đức', 'Giang', 'Hà', 'Hải', 'Hạnh', 'Hiếu', 'Hoàng', 'Hùng', 'Hương', 'Huy',
+  'Khánh', 'Khoa', 'Kiên', 'Kim', 'Lan', 'Linh', 'Long', 'Mai', 'Minh', 'My',
+  'Nam', 'Nga', 'Ngân', 'Ngọc', 'Nhân', 'Nhi', 'Như', 'Phong', 'Phúc', 'Phương',
+  'Quân', 'Quang', 'Quỳnh', 'Sơn', 'Thanh', 'Thảo', 'Thắng', 'Thiên', 'Thịnh', 'Thủy',
+  'Tiến', 'Trang', 'Trinh', 'Trung', 'Tuấn', 'Tùng', 'Uyên', 'Vân', 'Vinh', 'Vy',
+];
+
+const LAST_NAMES = [
+  'Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng',
+  'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý', 'Cao', 'Đinh', 'Lâm', 'Trịnh',
+];
+
+const MIDDLE_NAMES = [
+  'Văn', 'Thị', 'Đức', 'Minh', 'Hoàng', 'Quốc', 'Thanh', 'Xuân', 'Hải', 'Ngọc',
+  'Anh', 'Thu', 'Kim', 'Hồng', '',
 ];
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com'];
@@ -63,14 +51,34 @@ const normalize = (str: string) =>
 
 const PASSWORD_HASH = hashSync('123456', 10);
 
-export const USERS_DATA: Partial<User>[] = FULL_NAMES.map((fullName, index) => {
+// Generate 300 unique users
+const USER_COUNT = 300;
+const usedEmails = new Set<string>();
+
+export const USERS_DATA: Partial<User>[] = [];
+
+for (let i = 0; i < USER_COUNT; i++) {
+  const lastName = pickOne(LAST_NAMES);
+  const middleName = pickOne(MIDDLE_NAMES);
+  const firstName = pickOne(FIRST_NAMES);
+  const fullName = middleName
+    ? `${lastName} ${middleName} ${firstName}`
+    : `${lastName} ${firstName}`;
+
   const baseUsername = normalize(fullName);
-  const suffix = randomInt(1, 99);
+  let suffix = randomInt(1, 999);
+  let username = `${baseUsername}${suffix}`;
+  let email = `${username}@${pickOne(EMAIL_DOMAINS)}`;
 
-  const username = `${baseUsername}${suffix}`;
-  const email = `${username}@${pickOne(EMAIL_DOMAINS)}`;
+  // Ensure unique email
+  while (usedEmails.has(email)) {
+    suffix = randomInt(1, 9999);
+    username = `${baseUsername}${suffix}`;
+    email = `${username}@${pickOne(EMAIL_DOMAINS)}`;
+  }
+  usedEmails.add(email);
 
-  return {
+  USERS_DATA.push({
     email,
     emailVerified: randomEmailVerified(),
     password: PASSWORD_HASH,
@@ -78,6 +86,5 @@ export const USERS_DATA: Partial<User>[] = FULL_NAMES.map((fullName, index) => {
     fullName,
     phoneNumber: randomPhone(),
     dateOfBirth: randomDateOfBirth(),
-    active: true,
-  };
-});
+  });
+}

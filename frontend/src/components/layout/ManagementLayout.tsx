@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Film, Theater, DoorOpen, Users, Settings, LayoutDashboard, Calendar, Ticket, CreditCard } from 'lucide-react';
+import { Film, Theater, DoorOpen, Users, LayoutDashboard, Calendar, Ticket, CreditCard } from 'lucide-react';
 
 interface NavItem {
     path: string;
@@ -47,11 +47,6 @@ const navItems: NavItem[] = [
         path: '/management/users',
         label: 'Users',
         icon: <Users size={20} />,
-    },
-    {
-        path: '/management/settings',
-        label: 'Settings',
-        icon: <Settings size={20} />,
     },
 ];
 

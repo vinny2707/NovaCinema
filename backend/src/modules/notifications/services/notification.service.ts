@@ -58,11 +58,17 @@ export class NotificationService {
       })),
       frontendUrl: frontendUrl,
     });
+    const text = 
+    `Booking Confirmed! Movie: ${booking.movieTitle}.\n` +
+    `Showtime: ${booking.startAt?.toLocaleString('en-US')}.\n`+
+    `Amount: ${payment.amount.toLocaleString('vi-VN')} VND.\n`+
+    `View tickets at: ${frontendUrl}/my-tickets`;
 
     return this.mailService.send({
       to,
       subject: 'Payment Successful - Booking Confirmed',
       html,
+      text,
     });
   }
 }

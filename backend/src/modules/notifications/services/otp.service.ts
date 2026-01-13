@@ -25,10 +25,13 @@ export class OtpService {
     const html = this.templateRender.render('verify-email', {
       otp,
     });
+    const text = `Your NovaCinema verification code is: ${otp}. Valid for 5 minutes. Do not share this code.`;
+
     await this.mailService.send({
       to: email,
       subject: 'Verify your email',
       html,
+      text,
     });
   }
 

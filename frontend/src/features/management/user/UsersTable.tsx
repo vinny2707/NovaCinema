@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Edit, Trash2, Shield } from 'lucide-react';
+import { Edit, Trash2, Shield, UserCog } from 'lucide-react';
 import { userApi } from '../../../api/endpoints/user.api';
 import type { User } from '../../../api/endpoints/auth.api';
 import EditUserModal from './EditUserModal';
+import ChangeRoleModal from './ChangeRoleModal';
 import { useToast } from '../../../components/common/ToastProvider';
 import { formatUTC0DateToLocal } from '../../../utils/timezone';
 import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import { Pagination } from '../../../components/common/Pagination';
+import { useAuth } from '../../../context/AuthContext';
 
 interface Props {
     search?: string;
@@ -29,7 +31,12 @@ export default function UsersTable({ search = '', roles = '', isActive = '', pag
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [userToChangeRole, setUserToChangeRole] = useState<User | null>(null);
     const toast = useToast();
+    const { user: currentUser } = useAuth();
+
+    const isSuperAdmin = currentUser?.roles?.includes('SUPER_ADMIN');
 
     useEffect(() => {
         let mounted = true;
@@ -115,9 +122,18 @@ export default function UsersTable({ search = '', roles = '', isActive = '', pag
                                         <td className="px-6 py-4 text-sm text-gray-600">{formatUTC0DateToLocal(user.createdAt, 'en-US')}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => { setSelectedUser(user); setShowEdit(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                <button onClick={() => { setSelectedUser(user); setShowEdit(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit user">
                                                     <Edit size={18} />
                                                 </button>
+                                                {isSuperAdmin && (
+                                                    <button
+                                                        onClick={() => { setUserToChangeRole(user); setShowRoleModal(true); }}
+                                                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                                        title="Change roles"
+                                                    >
+                                                        <UserCog size={18} />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => {
                                                         setUserToDelete(user);
@@ -125,6 +141,7 @@ export default function UsersTable({ search = '', roles = '', isActive = '', pag
                                                     }}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     disabled={deletingId === user._id}
+                                                    title="Delete user"
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -141,6 +158,14 @@ export default function UsersTable({ search = '', roles = '', isActive = '', pag
                             user={selectedUser}
                             onClose={() => { setShowEdit(false); setSelectedUser(null); }}
                             onUpdated={() => { setShowEdit(false); setSelectedUser(null); setRefreshTrigger(t => t + 1); }}
+                        />
+                    )}
+
+                    {showRoleModal && userToChangeRole && (
+                        <ChangeRoleModal
+                            user={userToChangeRole}
+                            onClose={() => { setShowRoleModal(false); setUserToChangeRole(null); }}
+                            onUpdated={() => { setShowRoleModal(false); setUserToChangeRole(null); setRefreshTrigger(t => t + 1); }}
                         />
                     )}
 

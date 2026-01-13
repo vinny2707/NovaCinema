@@ -19,13 +19,14 @@ import UsersManagementPage from "./pages/management/UsersManagementPage";
 import ShowtimesManagementPage from "./pages/management/ShowtimesManagementPage";
 import TicketPricingManagementPage from "./pages/management/TicketPricingManagementPage";
 import BookingManagementPage from "./pages/management/BookingManagementPage";
-import SettingsPage from "./pages/management/SettingsPage";
 
 import ProfilePage from "./pages/ProfilePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
+import PaymentGatewayPage from "./pages/PaymentGatewayPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 import "./App.css";
 
@@ -64,7 +65,14 @@ function App() {
                 <CheckoutPage />
               </ProtectedRoute>
             } />
+            <Route path="payment-gateway" element={
+              <ProtectedRoute>
+                <PaymentGatewayPage />
+              </ProtectedRoute>
+            } />
             <Route path="payments/callback" element={<PaymentStatusPage />} />
+            {/* Catch-all route for 404 within main layout */}
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
 
           {/* Management Routes - Protected for Admin only */}
@@ -84,7 +92,8 @@ function App() {
             <Route path="showtimes" element={<ShowtimesManagementPage />} />
             <Route path="pricing" element={<TicketPricingManagementPage />} />
             <Route path="bookings" element={<BookingManagementPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+            {/* Catch-all route for 404 within management layout */}
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

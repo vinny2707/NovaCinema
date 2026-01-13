@@ -81,9 +81,9 @@ export const OTPVerificationModal: React.FC<OTPVerificationModalProps> = ({
             onSuccess();
         } catch (error: unknown) {
             console.error('❌ OTP verification error:', error);
-            const message = error instanceof Error
-                ? error.message
-                : 'Invalid OTP. Please try again.';
+            // Handle API error object from apiClient (contains message property)
+            const apiError = error as { message?: string };
+            const message = apiError?.message || 'Invalid OTP. Please try again.';
             setError(message);
         } finally {
             setIsVerifying(false);
@@ -106,9 +106,9 @@ export const OTPVerificationModal: React.FC<OTPVerificationModalProps> = ({
             setOtp('');
         } catch (error: unknown) {
             console.error('❌ Resend OTP error:', error);
-            const message = error instanceof Error
-                ? error.message
-                : 'Failed to resend OTP. Please try again.';
+            // Handle API error object from apiClient (contains message property)
+            const apiError = error as { message?: string };
+            const message = apiError?.message || 'Failed to resend OTP. Please try again.';
             setError(message);
         } finally {
             setIsResending(false);

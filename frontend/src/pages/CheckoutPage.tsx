@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Clock, MapPin, Calendar, Users } from 'lucide-react';
+import { MapPin, Calendar, Users } from 'lucide-react';
 import type { Showtime } from '../api/endpoints/showtime.api';
 import type { BookingSeat } from '../api/endpoints/booking.api';
-import { bookingApi } from '../api/endpoints/booking.api';
-import { paymentApi } from '../api/endpoints/payment.api';
 
 interface CheckoutState {
     showtime: Showtime;
@@ -17,9 +15,6 @@ export default function CheckoutPage() {
     const navigate = useNavigate();
     const state = location.state as CheckoutState;
 
-    const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
-    const [isProcessing, setIsProcessing] = useState(false);
-
     // Redirect if no booking data
     useEffect(() => {
         if (!state || !state.showtime || !state.selectedSeats || state.selectedSeats.length === 0) {
@@ -27,34 +22,11 @@ export default function CheckoutPage() {
         }
     }, [state, navigate]);
 
-    // Countdown timer
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    alert('Time expired! Please select seats again.');
-                    navigate('/');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [navigate]);
-
     if (!state) {
         return null;
     }
 
     const { showtime, selectedSeats, totalAmount } = state;
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -79,89 +51,11 @@ export default function CheckoutPage() {
         };
     };
 
-    const handlePayWithPayOS = async () => {
-        setIsProcessing(true);
-        try {
-            // Step 1: Create booking
-            const booking = await bookingApi.createBooking(showtime._id, {
-                selectedSeats: selectedSeats.map(s => s.seatCode),
-            });
-            console.log('Booking created:', booking);
-
-            // Step 2: Create payment
-            const payment = await paymentApi.createPayment(booking._id);
-            console.log('Payment created:', payment);
-
-            // Step 3: Redirect to PayOS checkout
-            if (payment.checkoutUrl) {
-                // Save booking info to localStorage for callback page
-                localStorage.setItem('pendingPayment', JSON.stringify({
-                    bookingId: booking._id,
-                    paymentId: payment._id,
-                    orderCode: payment.orderCode,
-                    showtime,
-                    selectedSeats,
-                    totalAmount
-                }));
-
-                // Redirect to PayOS
-                window.location.href = payment.checkoutUrl;
-            } else {
-                throw new Error('No checkout URL received from payment gateway');
-            }
-        } catch (error: unknown) {
-            console.error('Payment error:', error);
-
-            // Handle specific error types
-            let errorMessage = 'Failed to process payment. Please try again.';
-
-            if (error && typeof error === 'object' && 'response' in error) {
-                const apiError = error as { response?: { status: number; data?: { message?: string } }; request?: unknown; message?: string };
-
-                if (apiError.response) {
-                    // API error with response
-                    const status = apiError.response.status;
-                    const message = apiError.response.data?.message || apiError.message || '';
-
-                    if (status === 409) {
-                        errorMessage = 'These seats are no longer available. Please select different seats.';
-                    } else if (status === 410) {
-                        errorMessage = 'Your booking has expired. Please select seats again.';
-                    } else if (status === 400) {
-                        errorMessage = message || 'Invalid booking data. Please try again.';
-                    } else {
-                        errorMessage = `Error: ${message}`;
-                    }
-                } else if (apiError.request) {
-                    // Network error
-                    errorMessage = 'Network error. Please check your connection and try again.';
-                }
-            }
-
-            alert(errorMessage);
-            setIsProcessing(false);
-        }
-    };
-
     const datetime = formatDateTime(showtime.startAt);
 
     return (
         <div className="min-h-screen bg-gray-900 py-8">
             <div className="container mx-auto px-4 max-w-4xl">
-                {/* Timer Warning */}
-                <div className="bg-orange-900/50 border border-orange-500 rounded-lg p-4 mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Clock className="text-orange-400" size={24} />
-                        <div>
-                            <h3 className="text-orange-400 font-semibold">Complete payment within</h3>
-                            <p className="text-orange-200 text-sm">Your seats are temporarily reserved</p>
-                        </div>
-                    </div>
-                    <div className="text-3xl font-bold text-orange-400 font-mono">
-                        {formatTime(timeLeft)}
-                    </div>
-                </div>
-
                 <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-6">
@@ -233,26 +127,25 @@ export default function CheckoutPage() {
                             <span className="text-3xl font-bold text-yellow-400">{formatCurrency(totalAmount)}</span>
                         </div>
 
-                        {/* Payment Button */}
-                        <button
-                            onClick={handlePayWithPayOS}
-                            disabled={isProcessing}
-                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                    Processing...
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
-                                    </svg>
-                                    Pay with PayOS
-                                </>
-                            )}
-                        </button>
+                        {/* Payment Buttons */}
+                        <div className="space-y-3">
+                            {/* QR Payment Gateway */}
+                            <button
+                                onClick={() => navigate('/payment-gateway', {
+                                    state: {
+                                        showtime,
+                                        selectedSeats,
+                                        totalAmount
+                                    }
+                                })}
+                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-3 shadow-lg"
+                            >
+                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3,6H21V18H3V6M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M7,8A2,2 0 0,1 5,10V14A2,2 0 0,1 7,16H17A2,2 0 0,1 19,14V10A2,2 0 0,1 17,8H7Z" />
+                                </svg>
+                                Thanh toán bằng QR Code
+                            </button>
+                        </div>
 
                         <button
                             onClick={() => navigate(-1)}

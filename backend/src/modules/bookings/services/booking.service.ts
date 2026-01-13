@@ -1,3 +1,4 @@
+import escapeStringRegexp from 'escape-string-regexp';
 import {
   BadRequestException,
   ConflictException,
@@ -5,12 +6,14 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { SortFields } from 'src/common/types';
 import { DateUtil } from 'src/common/utils';
+import { pickSortableFields } from 'src/common/helpers';
+import { RoomType, SeatType } from 'src/modules/theaters/types';
 import { UserService } from 'src/modules/users';
 import { ShowtimeService } from 'src/modules/showtimes';
 import { RoomService, SeatService } from 'src/modules/theaters';
 import { PricingConfigService } from 'src/modules/pricing-configs';
-import { RoomType, SeatType } from 'src/modules/theaters/types';
 import {
   BOOKING_EXPIRE_MINUTES,
   BOOKING_LIMITS,
@@ -21,6 +24,75 @@ import { BookingSeatStatus, BookingStatus } from '../types';
 import { BookingRepository } from '../repositories';
 import { BookingSeat } from '../schemas';
 
+/** */
+const QUERY_FIELDS = {
+  SEARCHABLE: ['username', 'movieTitle', 'theaterName', 'roomName'] as const,
+  REGEX_MATCH: ['username', 'movieTitle', 'theaterName', 'roomName'] as const,
+  ARRAY_MATCH: ['status', 'roomType'] as const,
+  EXACT_MATCH: [
+    'userId',
+    'showtimeId',
+    'movieId',
+    'theaterId',
+    'roomId',
+  ] as const,
+  SORTABLE: ['createdAt', 'startAt', 'finalAmount', 'status'] as const,
+} as const;
+
+type PaginatedQueryCriteria = {
+  userId?: string;
+  username?: string;
+  showtimeId?: string;
+  movieId?: string;
+  movieTitle?: string;
+  theaterId?: string;
+  theaterName?: string;
+  roomId?: string;
+  roomName?: string;
+  roomType?: RoomType[];
+  status?: BookingStatus[];
+
+  search?: string;
+  sort?: SortFields;
+  page?: number;
+  limit?: number;
+  from?: Date;
+  to?: Date;
+};
+
+type PaginatedQueryByShowtimeCriteria = {
+  showtimeId: string;
+  userId?: string;
+  username?: string;
+  status?: BookingStatus[];
+
+  sort?: SortFields;
+  page?: number;
+  limit?: number;
+  from?: Date;
+  to?: Date;
+};
+
+type PaginatedQueryByUserCriteria = {
+  userId: string;
+
+  movieId?: string;
+  movieTitle?: string;
+  theaterId?: string;
+  theaterName?: string;
+  roomId?: string;
+  roomName?: string;
+  roomType?: RoomType[];
+  status?: BookingStatus[];
+
+  sort?: SortFields;
+  page?: number;
+  limit?: number;
+  from?: Date;
+  to?: Date;
+};
+
+/** */
 type Seat = {
   seatCode: string;
   seatType: SeatType;
@@ -50,6 +122,42 @@ export class BookingService {
     return this.bookingRepository.query.findOneById({
       id: id,
     });
+  }
+
+  /** */
+  public async findPaginatedBookings(options: PaginatedQueryCriteria) {
+    const { page, limit, sort: rawSort, ...rest } = options;
+
+    const filter = await this.buildBookingFilter(rest);
+    const sort = pickSortableFields(rawSort, QUERY_FIELDS.SORTABLE);
+
+    const result = await this.bookingRepository.query.findManyPaginated({
+      filter,
+      page,
+      limit,
+      sort,
+    });
+
+    return {
+      items: result.items,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
+  }
+
+  /** */
+  public async findPaginatedBookingsByShowtime(
+    options: PaginatedQueryByShowtimeCriteria,
+  ) {
+    return this.findPaginatedBookings(options);
+  }
+
+  /** */
+  public async findPaginatedBookingsByUser(
+    options: PaginatedQueryByUserCriteria,
+  ) {
+    return this.findPaginatedBookings(options);
   }
 
   /** */
@@ -242,7 +350,6 @@ export class BookingService {
       },
       update: {
         status: BOOKING_STATUSES.CANCELLED,
-        expiresAt: null,
       },
     });
 
@@ -261,7 +368,6 @@ export class BookingService {
       },
       update: {
         status: BOOKING_STATUSES.EXPIRED,
-        expiresAt: null,
       },
     });
 
@@ -522,5 +628,83 @@ export class BookingService {
         );
       }
     }
+  }
+
+  /** */
+  private async buildBookingFilter(options: PaginatedQueryCriteria) {
+    const {
+      search,
+      movieId,
+      theaterId,
+      roomId,
+      from: rawFrom,
+      to: rawTo,
+      ...rest
+    } = options;
+
+    const filter: any = {};
+
+    // Handle indirect filtering via showtimes
+    if (movieId || theaterId || roomId) {
+      const showtimes = await this.showtimeService.findShowtimes({
+        movieId,
+        theaterId,
+        roomId,
+      });
+
+      const showtimeIds = showtimes.map((st) => st._id);
+
+      // If no showtimes found, return empty result
+      if (showtimeIds.length === 0) {
+        filter.showtimeId = { $in: [] }; // Will match nothing
+      } else {
+        filter.showtimeId = { $in: showtimeIds };
+      }
+    }
+
+    // search fields
+    if (search) {
+      const r = new RegExp(escapeStringRegexp(search), 'i');
+      filter.$or = QUERY_FIELDS.SEARCHABLE.map((f) => ({ [f]: r }));
+    }
+
+    // regex fields
+    QUERY_FIELDS.REGEX_MATCH.forEach((f) => {
+      if (rest[f] !== undefined)
+        filter[f] = new RegExp(escapeStringRegexp(rest[f]), 'i');
+    });
+
+    // Array match fields
+    QUERY_FIELDS.ARRAY_MATCH.forEach((f) => {
+      if (rest[f]?.length) {
+        filter[f] = { $in: rest[f] };
+      }
+    });
+
+    // Exact match fields
+    QUERY_FIELDS.EXACT_MATCH.forEach((f) => {
+      if (rest[f] !== undefined) {
+        filter[f] = rest[f];
+      }
+    });
+
+    // Date range filter (createdAt)
+    if (rawFrom || rawTo) {
+      const startDate = rawFrom ? DateUtil.startOfDay(rawFrom) : undefined;
+      const endDate = rawTo ? DateUtil.endOfDay(rawTo) : undefined;
+
+      if (startDate && endDate && startDate > endDate) {
+        throw new BadRequestException(
+          'Start date must be before or equal to end date',
+        );
+      }
+
+      filter.createdAt = {
+        ...(startDate && { $gte: startDate }),
+        ...(endDate && { $lte: endDate }),
+      };
+    }
+
+    return filter;
   }
 }

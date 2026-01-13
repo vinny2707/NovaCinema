@@ -61,9 +61,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
             onSuccess?.();
         } catch (error: unknown) {
-            const message = error instanceof Error
-                ? error.message
-                : 'Login failed. Please check your credentials.';
+            // Handle API error object from apiClient (contains message property)
+            const apiError = error as { message?: string };
+            const message = apiError?.message || 'Login failed. Please check your credentials.';
             setApiError(message);
         } finally {
             setIsLoading(false);

@@ -30,7 +30,32 @@ export interface BookingSeat {
     unitPrice: number;
 }
 
-export type BookingStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
+export type BookingStatus = 'DRAFT' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+
+export type RoomType = '2D' | '3D' | 'VIP';
+
+export interface Ticket {
+    _id: string;
+    code: string;
+    bookingId: string;
+    showtimeId: string;
+    userId: string;
+    status: 'VALID' | 'USED' | 'CANCELLED' | 'EXPIRED';
+    scannedAt?: string;
+    startAt?: string;
+    // Snapshot data
+    movieTitle?: string;
+    moviePoster?: string;
+    theaterName?: string;
+    roomName?: string;
+    roomType?: string;
+    // Seat info
+    seatType: string;
+    seatCode: string;
+    unitPrice: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
 
 export interface Booking {
     _id: string;
@@ -60,6 +85,55 @@ export interface CreateBookingDto {
 export interface ConfirmBookingDto {
     paymentMethod: 'CASH' | 'CARD' | 'MOMO' | 'VNPAY';
     voucherCode?: string;
+}
+
+export interface BookingHistoryQuery {
+    page?: number;
+    limit?: number;
+    status?: BookingStatus[];
+    from?: string;
+    to?: string;
+    movieTitle?: string;
+    theaterName?: string;
+    roomType?: ('2D' | '3D' | 'VIP')[];
+}
+
+export interface PaginatedBookings {
+    items: Booking[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+// Query params for admin booking management
+export interface AdminBookingQuery {
+    page?: number;
+    limit?: number;
+    sort?: string[];
+    search?: string;
+    userId?: string;
+    movieId?: string;
+    theaterId?: string;
+    roomId?: string;
+    status?: BookingStatus | BookingStatus[];
+    username?: string;
+    movieTitle?: string;
+    theaterName?: string;
+    roomName?: string;
+    roomType?: RoomType | RoomType[];
+    from?: string; // Date string
+    to?: string; // Date string
+}
+
+// Query params for showtime bookings
+export interface AdminBookingByShowtimeQuery {
+    page?: number;
+    limit?: number;
+    sort?: string[];
+    userId?: string;
+    username?: string;
+    status?: BookingStatus | BookingStatus[];
 }
 
 // ==================== API ====================
@@ -113,5 +187,43 @@ export const bookingApi = {
      */
     cancelBooking: async (bookingId: string): Promise<void> => {
         await apiClient.delete(`/bookings/${bookingId}`);
+    },
+
+    /**
+     * Get paginated list of all bookings (Admin only)
+     * Supports filtering by various fields
+     */
+    getPaginatedBookings: async (query: AdminBookingQuery): Promise<PaginatedBookings> => {
+        const response = await apiClient.get('/bookings', { params: query });
+        return response as any;
+    },
+
+    /**
+     * Get paginated bookings for a specific showtime (Admin only)
+     */
+    getPaginatedBookingsByShowtime: async (showtimeId: string, query: AdminBookingByShowtimeQuery): Promise<PaginatedBookings> => {
+        const response = await apiClient.get(`/showtimes/${showtimeId}/bookings`, { params: query });
+        return response as any;
+    },
+
+    /**
+     * Get current user's booking history with pagination
+     * Returns paginated list of bookings for the logged-in user
+     */
+    getUserBookings: async (query?: BookingHistoryQuery): Promise<PaginatedBookings> => {
+        const response = await apiClient.get('/users/me/bookings', { params: query });
+        // Interceptor already transformed the response, so just return it directly
+        return response as any;
+    },
+
+    /**
+     * Get tickets for a specific booking
+     * Returns list of tickets with QR codes for the booking
+     */
+    getTicketsByBookingId: async (bookingId: string): Promise<Ticket[]> => {
+        const response = await apiClient.get(`/bookings/${bookingId}/tickets`);
+        // Interceptor returns response.data which contains the full API response
+        // So we need to extract the data array from it
+        return response.data || response;
     },
 };

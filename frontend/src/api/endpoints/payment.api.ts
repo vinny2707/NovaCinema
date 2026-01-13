@@ -28,6 +28,11 @@ export interface Payment {
 export interface PaymentCheckout extends Payment {
     checkoutUrl: string;
     qrCode?: string;
+    // PayOS bank transfer info
+    bin?: string;           // Bank bin code (e.g., "970422")
+    accountNumber?: string; // Bank account number
+    accountName?: string;   // Account holder name
+    transferContent?: string;   // Transfer description/content
     // Booking snapshot data
     movieTitle?: string;
     theaterName?: string;
@@ -78,8 +83,6 @@ export const paymentApi = {
      * Cancel payment
      */
     cancelPayment: async (paymentId: string, reason?: string): Promise<void> => {
-        await apiClient.delete(`/payments/${paymentId}`, {
-            data: { reason },
-        });
+        await apiClient.patch(`/payments/${paymentId}/cancel`, { reason });
     },
 };

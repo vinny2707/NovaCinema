@@ -24,7 +24,7 @@ const ProfilePage = () => {
   }, []);
 
   if (isLoading) {
-    return <div className="p-6">Loading profile...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-white text-lg">Loading profile...</div>;
   }
 
   return <ProfileLayout profile={profile} user={user} onLogout={logout} />;

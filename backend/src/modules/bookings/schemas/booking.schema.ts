@@ -120,6 +120,17 @@ export class Booking {
   @Prop() movieTitle?: string;
   @Prop() theaterName?: string;
   @Prop() roomName?: string;
+
+  //
+  @Prop({
+    type: Date,
+  })
+  createdAt?: Date;
+
+  @Prop({
+    type: Date,
+  })
+  updatedAt?: Date;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);

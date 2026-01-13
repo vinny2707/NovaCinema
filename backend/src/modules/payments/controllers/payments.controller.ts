@@ -3,6 +3,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Body,
   HttpCode,
@@ -12,7 +13,7 @@ import { ParseObjectIdPipe } from '@nestjs/mongoose';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public, WrapOkResponse } from 'src/common/decorators';
 import { PaymentService } from '../services';
-import { WebhookReqDto } from '../dtos/requests';
+import { WebhookReqDto, CancelPaymentReqDto } from '../dtos/requests';
 import {
   PaymentCheckoutResDto,
   PaymentDetailResDto,
@@ -44,6 +45,17 @@ export class PaymentsController {
     const payment = await this.paymentService.findPaymentDetailById(id);
     if (!payment) throw new NotFoundException('Payment not found');
     return payment;
+  }
+
+  @ApiOperation({ description: 'Cancel payment by ID' })
+  @WrapOkResponse({ dto: PaymentResDto })
+  @HttpCode(HttpStatus.OK)
+  @Patch('payments/:id/cancel')
+  public async cancelPayment(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() body: CancelPaymentReqDto,
+  ) {
+    return this.paymentService.cancelPayment(id, body.reason);
   }
 
   @ApiOperation({ description: 'PayOS webhook handler' })

@@ -24,6 +24,7 @@ import { USER_ROLES } from '../constants';
 import { UserService } from '../services';
 import {
   ChangePasswordReqDto,
+  ChangeRolesReqDto,
   PaginatedQueryUsersReqDto,
   UpdateProfileReqDto,
 } from '../dtos/requests';
@@ -83,7 +84,7 @@ export class UserController {
   @WrapOkResponse({ dto: UserResDto, message: 'Activated successful' })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.OK)
-  @Patch('users:id/activate')
+  @Patch('users/:id/activate')
   public async activateUser(@Param('id', ParseObjectIdPipe) id: string) {
     return await this.userService.activateUserById(id);
   }
@@ -92,7 +93,7 @@ export class UserController {
   @WrapOkResponse({ dto: UserResDto, message: 'Deactivated successful' })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.OK)
-  @Patch('users:id/deactivate')
+  @Patch('users/:id/deactivate')
   public async deactivateUser(@Param('id', ParseObjectIdPipe) id: string) {
     return await this.userService.deactivateUserById(id);
   }
@@ -101,8 +102,20 @@ export class UserController {
   @WrapNoContentResponse({ message: 'Deleted successfully' })
   @RequireRoles(USER_ROLES.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('users:id')
+  @Delete('users/:id')
   public async deleteUser(@Param('id', ParseObjectIdPipe) id: string) {
     return await this.userService.deleteUserById(id);
+  }
+
+  @ApiOperation({ description: 'Change user roles (Super Admin only)' })
+  @WrapOkResponse({ dto: UserResDto, message: 'Roles updated successfully' })
+  @RequireRoles(USER_ROLES.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @Patch('users/:id/roles')
+  public async changeUserRoles(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: ChangeRolesReqDto,
+  ) {
+    return await this.userService.changeUserRolesById(id, dto.roles);
   }
 }

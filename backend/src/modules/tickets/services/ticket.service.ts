@@ -1,6 +1,5 @@
-import Hashids from 'hashids';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Types } from 'mongoose';
 import { DateUtil } from 'src/common/utils';
 import { RoomType, SeatType } from 'src/modules/theaters/types';
 import { TICKET_STATUSES } from '../constants';
@@ -40,15 +39,8 @@ interface BookingInput {
 
 @Injectable()
 export class TicketService {
-  private hashids: Hashids;
-
-  public constructor(
-    private readonly ticketRepository: TicketRepository,
-    private readonly configService: ConfigService,
-  ) {
-    const salt = this.configService.getOrThrow<string>('TICKET_CODE_SALT');
-    const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    this.hashids = new Hashids(salt, 10, alphabet);
+  public constructor(private readonly ticketRepository: TicketRepository) {
+    //
   }
 
   public async findTicketByCode(code: string) {
@@ -71,12 +63,7 @@ export class TicketService {
   /** CREATE */
   public async createTicketsFromBooking(input: BookingInput) {
     const ticketsData = input.seats.map((seat, index) => {
-      const code = this.generateTicketCode(
-        input._id,
-        input.roomType,
-        seat.seatType,
-        index,
-      );
+      const code = this.generateTicketCode(input.roomType, seat.seatType);
 
       return {
         bookingId: input._id,
@@ -122,23 +109,14 @@ export class TicketService {
   }
 
   /**
-   * @returns RR-HHHHHHHHHH-SS
-   * @example 2D-K7A93NCW2X-NM
+   * @returns RR-HHHHHHHHHHHHHHHHHHHHHHHH-SS
+   * @example 2D-K7A93HHHHHHHHHHHHHHNCW2X-NM
    */
-  private generateTicketCode(
-    bookingId: string,
-    roomType: RoomType,
-    seatType: SeatType,
-    index: number,
-  ): string {
+  private generateTicketCode(roomType: RoomType, seatType: SeatType): string {
     const roomChar = ROOM_TYPE_CODE_MAP[roomType] || 'XX';
     const seatChar = SEAT_TYPE_CODE_MAP[seatType] || 'SS';
+    const oid = new Types.ObjectId().toHexString().toUpperCase();
 
-    const bookingSeed = parseInt(bookingId.slice(-10), 16);
-    const timeSeed = new Date().getMilliseconds() + index;
-    const hash = this.hashids.encode(bookingSeed, timeSeed);
-    const middleHash = hash.padEnd(10, '0').slice(0, 10);
-
-    return `${roomChar}-${middleHash}-${seatChar}`;
+    return `${roomChar}-${oid}-${seatChar}`;
   }
 }

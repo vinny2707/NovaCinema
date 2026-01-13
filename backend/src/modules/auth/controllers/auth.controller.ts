@@ -7,10 +7,12 @@ import {
 } from 'src/common/decorators';
 import { AuthService } from '../services';
 import {
+  ForgotPasswordReqDto,
   LoginReqDto,
   RefreshTokenReqDto,
   RegisterReqDto,
   ResendOtpReqDto,
+  ResetPasswordReqDto,
   VerifyEmailReqDto,
 } from '../dtos/requests';
 import { AccessTokenResDto, AuthResDto } from '../dtos/responses';
@@ -67,4 +69,23 @@ export class AuthController {
   public async resendEmailOtp(@Body() dto: ResendOtpReqDto) {
     return this.authService.resendOtp(dto.email);
   }
+
+  @ApiOperation({ description: 'Forgot password - send OTP to email' })
+  @WrapOkResponse({ message: 'OTP sent to your email' })
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('auth/forgot-password')
+  public async forgotPassword(@Body() dto: ForgotPasswordReqDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @ApiOperation({ description: 'Reset password - verify OTP and set new password' })
+  @WrapOkResponse({ message: 'Password reset successfully' })
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('auth/reset-password')
+  public async resetPassword(@Body() dto: ResetPasswordReqDto) {
+    return this.authService.resetPassword(dto.email, dto.otp, dto.newPassword);
+  }
 }
+

@@ -27,6 +27,10 @@ export type CreatePaymentLinkOutput = {
   checkoutUrl: string;
   qrCode?: string;
   expiresAt: Date;
+  bin?: string;
+  accountNumber?: string;
+  accountName?: string;
+  transferContent?: string;
 };
 
 @Injectable()
@@ -72,20 +76,36 @@ export class PayosService {
     const orderCode = this.generateOrderCode(input.bookingId);
     const expiredAt = Math.floor(Date.now() / 1000) + input.expiresInSeconds;
 
+    const description = `Booking ${orderCode}`;
+
     const paymentLink = await this.payos.paymentRequests.create({
       orderCode,
       amount: input.amount,
-      description: `Booking ${orderCode}`,
+      description,
       returnUrl: this.returnUrl,
       cancelUrl: this.cancelUrl,
       expiredAt,
     });
+
+    // Extract transfer content from qrCode (format: ...{refCode} Booking {orderCode}...)
+    // The refCode is 11 characters before "Booking"
+    let transferContent: string | undefined;
+    if (paymentLink.qrCode) {
+      const match = paymentLink.qrCode.match(/([A-Z0-9]{11}) Booking \d+/);
+      if (match) {
+        transferContent = match[0]; // e.g., "CSQ004R6DX9 Booking 11001016803829"
+      }
+    }
 
     return {
       orderCode,
       checkoutUrl: paymentLink.checkoutUrl,
       qrCode: paymentLink.qrCode,
       expiresAt: new Date(paymentLink.expiredAt! * 1000),
+      bin: paymentLink.bin,
+      accountNumber: paymentLink.accountNumber,
+      accountName: paymentLink.accountName,
+      transferContent,
     };
   }
 

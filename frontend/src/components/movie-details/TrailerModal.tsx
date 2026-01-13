@@ -41,6 +41,8 @@ export default function TrailerModal({ open, trailerUrl, title, onClose }: Trail
 
   if (!open) return null;
 
+  const embedUrl = getEmbedUrl(trailerUrl);
+
   const modal = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-transparent cursor-pointer"
@@ -56,12 +58,21 @@ export default function TrailerModal({ open, trailerUrl, title, onClose }: Trail
         </div>
 
         <div className="p-2">
-          <iframe
-            src={getEmbedUrl(trailerUrl)}
-            title={`${title ?? "Trailer"}`}
-            allowFullScreen
-            className="w-full h-64 md:h-96 rounded-md cursor-pointer"
-          />
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title={`${title ?? "Trailer"}`}
+              allowFullScreen
+              className="w-full h-64 md:h-96 rounded-md cursor-pointer"
+            />
+          ) : (
+            <div className="w-full h-64 md:h-96 flex items-center justify-center text-white text-lg">
+              <div className="text-center">
+                <p>Trailer chưa có sẵn</p>
+                <p className="text-sm text-gray-400 mt-2">Trailer not available</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

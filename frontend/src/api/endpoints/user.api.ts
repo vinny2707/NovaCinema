@@ -34,4 +34,8 @@ export const userApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/users/${id}`);
   },
+  changeRoles: async (id: string, roles: string[]): Promise<User> => {
+    const response = await apiClient.patch(`/users/${id}/roles`, { roles });
+    return response as unknown as User;
+  },
 };

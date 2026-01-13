@@ -1,7 +1,7 @@
 # -------------------------
 # 1) Builder
 # -------------------------
-FROM node:18-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN npm run build
 # -------------------------
 # 2) Production
 # -------------------------
-FROM node:18-alpine AS production
+FROM node:20-slim AS production
 
 WORKDIR /app
 ENV NODE_ENV=production

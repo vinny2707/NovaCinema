@@ -1,4 +1,3 @@
-export { QueryShowtimesByDateReqDto } from './query-showtimes-by-date.req.dto';
 export { QueryRangeShowtimesReqDto } from './query-range-showtimes.req.dto';
 export { QueryAvailableShowtimesReqDto } from './query-available-showtime.dto';
 export { PaginatedQueryRangeShowtimesReqDto } from './paginated-query-range-showtimes.req.dto';

@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "**/*.hbs",
+        "include": "modules/notifications/templates/**/*.hbs",
         "outDir": "dist"
       }
     ]

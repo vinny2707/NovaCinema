@@ -259,6 +259,17 @@ export class UserService {
     return this.updateUserStatusById(id, false);
   }
 
+  public async changeUserRolesById(id: string, roles: UserRole[]) {
+    const { modifiedItem: updatedUser } =
+      await this.userRepo.command.updateOneById({
+        id,
+        update: { roles },
+      });
+
+    if (!updatedUser) throw new NotFoundException('User not found');
+    return this.stripPassword(updatedUser);
+  }
+
   /** */
   public async deleteUserById(id: string) {
     const exists = await this.userRepo.query.exists({
@@ -269,6 +280,22 @@ export class UserService {
     const result = await this.userRepo.command.deleteOneById({ id });
     if (!result.deletedCount)
       throw new InternalServerErrorException('Deletion failed');
+  }
+
+  /** Reset password by email (for forgot password flow) */
+  public async resetPasswordByEmail(email: string, newPassword: string) {
+    const user = await this.userRepo.query.findOneByEmail({ email });
+    if (!user) throw new NotFoundException('User not found');
+
+    const hashed = await HashUtil.hash(newPassword);
+    const { modifiedItem: updatedUser } =
+      await this.userRepo.command.updateOneById({
+        id: user._id.toString(),
+        update: { password: hashed },
+      });
+
+    if (!updatedUser) throw new NotFoundException('User not found');
+    return this.stripPassword(updatedUser);
   }
 
   /** */

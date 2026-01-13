@@ -137,4 +137,24 @@ export class AuthService {
     await this.otpService.send(user.email);
     return true;
   }
+
+  /** Forgot password - send OTP to email */
+  public async forgotPassword(email: string) {
+    const user = await this.userService.findUserByEmail(email);
+    if (!user) throw new BadRequestException('User not found');
+
+    await this.otpService.send(user.email);
+    return true;
+  }
+
+  /** Reset password - verify OTP and set new password */
+  public async resetPassword(email: string, otp: string, newPassword: string) {
+    const user = await this.userService.findUserByEmail(email);
+    if (!user) throw new BadRequestException('User not found');
+
+    await this.otpService.verify(user.email, otp);
+    await this.userService.resetPasswordByEmail(user.email, newPassword);
+
+    return true;
+  }
 }

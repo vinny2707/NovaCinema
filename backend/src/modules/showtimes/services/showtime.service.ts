@@ -15,14 +15,13 @@ import { RoomService, TheaterService } from 'src/modules/theaters';
 import { RoomType } from 'src/modules/theaters/types';
 import { ShowtimeDocument } from '../schemas';
 import { ShowtimeRepository } from '../repositories';
-import { raw } from '@nestjs/mongoose';
 
 const GAP_MIN = 10;
 const ROUND_STEP_MIN = 5;
 const QUERY_FIELDS = {
-  SEARCHABLE: [] as readonly string[],
-  REGEX_MATCH: [] as readonly string[],
-  ARRAY_MATCH: [] as readonly string[],
+  SEARCHABLE: ['movieTitle', 'theaterName', 'roomName'] as const,
+  REGEX_MATCH: ['movieTitle', 'theaterName', 'roomName'] as const,
+  ARRAY_MATCH: ['roomType'] as const,
   EXACT_MATCH: ['isActive', 'movieId', 'theaterId', 'roomId'],
   SORTABLE: ['startAt'],
 } as const;
@@ -64,33 +63,29 @@ type FilterCriteria = {
   theaterId?: string;
   roomId?: string;
   isActive?: boolean;
+  movieTitle?: string;
+  theaterName?: string;
+  roomName?: string;
+  roomType?: RoomType[];
 };
 
 type QueryCriteria = FilterCriteria & {
   search?: string;
   sort?: SortFields;
-};
-
-type QueryRangeCriteria = QueryCriteria & {
   from?: Date;
   to?: Date;
 };
 
-type QueryByDateCriteria = QueryCriteria & {
-  date: Date;
-};
-
-type QueryAvailableCriteria = QueryCriteria & {
+type QueryAvailableCriteria = FilterCriteria & {
+  movieId: string; // override
+  search?: string;
+  sort?: SortFields;
   date?: Date;
-  movieId: string;
 };
 
 type PaginatedQueryCriteria = QueryCriteria & {
   page?: number;
   limit?: number;
-};
-
-type PaginatedQueryRangeCriteria = PaginatedQueryCriteria & {
   from?: Date;
   to?: Date;
 };
@@ -140,7 +135,7 @@ export class ShowtimeService {
     return this.showtimeRepo.query.findOneById({ id });
   }
 
-  public async findShowtimes(options: QueryRangeCriteria) {
+  public async findShowtimes(options: QueryCriteria) {
     const { sort: rawSort = { startAt: 'asc' }, ...rest } = options;
     const filter = this.buildShowtimeFilter(rest);
     const sort = pickSortableFields(rawSort, QUERY_FIELDS.SORTABLE);
@@ -160,7 +155,7 @@ export class ShowtimeService {
     });
   }
 
-  public async findShowtimesPaginated(options: PaginatedQueryRangeCriteria) {
+  public async findShowtimesPaginated(options: PaginatedQueryCriteria) {
     const {
       page,
       limit,
@@ -279,7 +274,7 @@ export class ShowtimeService {
   }
 
   /******************************** */
-  private buildShowtimeFilter(options: QueryRangeCriteria) {
+  private buildShowtimeFilter(options: QueryCriteria) {
     const { search, from: rawStart, to: rawEnd, ...rest } = options;
 
     const filter: FilterQuery<ShowtimeDocument> = {};
